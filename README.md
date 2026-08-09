@@ -49,4 +49,4 @@ It leverages **hash functions, XOR operations, nonces, and timestamps** to ensur
 ## 🚀 Getting Started
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/authchain-uav.git
+   git clone https://github.com/Ajay9508/authchain-uav.git
