@@ -1,0 +1,169 @@
+hashfunction H;
+function XOR;
+
+// usertype
+secret sk: Function;
+usertype SharedSecret;
+usertype ConstVal;
+usertype key;
+usertype Nonce;
+usertype Agent;
+usertype Ticket;
+usertype SessKey;
+
+const Iu:Agent;
+const id :Agent; //UAV identity
+const Icn : Agent;
+
+
+const Pu: ConstVal;
+const STCN: ConstVal;
+const pk: key;
+inversekeys(pk,sk);
+
+const Biometric : ConstVal;   //Biometric data
+const Ap : SharedSecret;
+const datad : SharedSecret;
+const Rcn : SharedSecret;
+const Rd : SharedSecret;
+const Stuav;
+const c1;
+const Stcn;
+
+
+//var Ru: SharedSecret;
+//var Stu : Nonce;
+//var Rd : SharedSecret;
+//var Rcn : SharedSecret;
+//var Stuav : Nonce;
+//secret Std : Nonce;
+
+//------------------UD-----------------------------
+        macro Ru = H(Iu,Pu);
+        macro Ru1 =H(Ru,Stu);
+        macro temp1 = (a1 ,Ru);
+        macro Au4 = XOR(Ru1,temp1);
+        macro Au5 = H(a2,Ru,pk);
+        macro Au6 = H(Ru1,Au4,Au5);
+        macro temp1 = (a1,Stu);
+        macro Au7 = XOR(XOR(Au6,temp1),a2);
+
+        macro Sig1 = H(XOR(XOR(Au6,H(Stu,a1)),H(a2,Ru)));
+//----------------------CN--------------------------
+        macro CN1 = H(Rd,Icn,Rcn,Ap,STCN);
+        macro CN2 =H(c1,Rcn,CN1);
+        macro CN3 = H(CN1, XOR( Stcn,c1));
+        macro temp2 = H(CN1,CN3,Stcn,c1);
+        macro Sig2 = H(XOR(CN2,temp2),Stuav);
+        macro Sig4 = H(Rd,id,Stuav,pk);                            //send UD
+        macro Sig5 = H(Rd,id,Std);// send UAV
+
+//-------------------UAV-------------------------
+        macro U1 = H(Rd,id,Ap,Std);
+        macro temp3 = (a2,Std);
+        macro U2 =  XOR(U1,temp3);
+        macro U3 = H(a2,U1,U2,Rd,Std);
+        macro U4 = XOR(U3,datad);
+        macro Sig3 = H(a2,U1,XOR(U2,Std),U3);
+//=================protocols===========================
+protocol UDCNUAV(UD, CN, UAV)
+{
+    role UD
+    {
+
+        fresh a1: Nonce;
+        fresh a2 : Nonce;
+        fresh  Stu : Nonce;   //  current timestamp  request send UD
+        fresh Stuav : Nonce;
+        fresh r4 :Nonce;
+        fresh r11 :Nonce;
+        var Sig4recv;
+
+          send_1(UD, CN,{Iu,Au4 ,Au5,Sig1,Stu}pk(CN));  //UD --> CN(Authentication Request)
+
+        recv_4(CN, UD,{Sig4recv}pk(UD)); //auth from CN   // CN --> UD  Authentication Confirmation
+        match(Sig4recv,Sig4);
+        claim_UD1(UD,Alive);
+        claim_UD2(UD,Nisynch);
+        claim_UD3(UD, Niagree);
+        claim_UD4(UD,Secret,Pu);
+        claim_UD5(UD,Secret,Au6);
+        claim_UD6(UD,Secret,Stu);
+        claim_UD7(UD,Weakagree);
+
+    }
+
+    role CN
+    {
+        fresh Stcn : Nonce;
+        fresh c1 :Nonce;
+        fresh Rcn :Nonce;
+        fresh Rd : Nonce;
+        fresh Std : Nonce;
+
+        var a1 : Nonce;
+        var a2 : Nonce;
+        var Stu : Nonce;
+        var Iu: Agent;
+        var Au4;
+        var Au5;
+        var Sig1recv:Ticket;
+        var Sturecv:Nonce;
+
+        recv_1(UD,CN,{Iu,Au4,Au5,Sig1recv,Sturecv}pk(CN));
+        match(Sig1recv,Sig1);
+
+        send_2(CN,UAV,(CN3,Icn,Stcn,Sig2,c1));
+        var U2recv;
+        var U4recv;
+        var Sig3recv;
+        var Stdrecv:Nonce;
+        var Stuavrecv : Nonce;
+        recv_3(UAV,CN,(U2recv,U4recv,Sig3recv,Stdrecv,Stuavrecv));
+        match(Sig3recv,Sig3);
+
+         send_4(CN, UD,{Sig4}pk(UD));              //CN --> UD (Authentication Confirmation)
+        send_5(CN,UAV,H(Ru,UAV,Std));       //CN --> UAV (Authentication Confirmation)
+
+        claim_CN1(CN,Secret,Rd);
+        claim_CN2(CN,Secret,CN2);
+        claim_CN3(CN,Niagree);
+        claim_CN4(CN,Nisynch);
+         claim_CN6(CN,Alive);
+          claim_CN7(CN,Weakagree);
+    }
+
+    role UAV
+    {
+        fresh a2 : Nonce;
+        fresh r1 : Nonce;
+        fresh r2 : Nonce;
+        fresh Std: Nonce;
+        fresh Stuav : Nonce;
+        var CN3recv;
+        var Icnrecv ;
+        var Stcnrecv:Nonce;
+        var Sig2recv :Ticket;
+        var c1recv: Nonce;
+        //var CN3recv,Icnrecv,Sig2recv,c1recv:Ticket;
+
+        var SessHash;
+
+        macro Rd = H(id, r1);
+        macro Ap = H(Rd,r2,Std);
+
+       recv_2(CN, UAV,(CN3recv,Icnrecv,Stcnrecv,Sig2recv,c1recv));
+
+                match(Sig2recv,Sig2);
+
+         send_3(UAV,CN,(U2,U4,Sig3,Std,Stuav));                 //UAV --> CN
+         recv_5(CN,UAV,SessHash);
+
+        claim_UAV1(UAV,Alive);
+        claim_UAV2(UAV,Nisynch);
+        claim_UAV3(UAV,Niagree);
+        claim_UAV4(UAV,Secret,U3);
+        claim_UAV5(UAV,Secret,Stuav);
+
+    }
+}
