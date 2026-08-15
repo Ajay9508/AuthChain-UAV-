@@ -50,3 +50,16 @@ It leverages **hash functions, XOR operations, nonces, and timestamps** to ensur
 1. Clone the repository:
    ```bash
    git clone https://github.com/Ajay9508/authchain-uav.git
+   ```
+   ## Tool
+   - Scyther automation tool is used for formal verification of cryptographic protocols.
+   -  The download link of the tool is:
+     ```bash
+     https://people.cispa.io/cas.cremers/scyther/
+     ```
+     ## Scyther-Manual
+     - Scyther user manual link:
+       ```bash
+       https://ics.upjs.sk/~jirasek/krp/scyther-manual.pdf
+       ```
+       
